@@ -3,8 +3,38 @@
 namespace Elgg\Roles\UI;
 
 // VIEWS FOR AUTOCOMPLETE
-$views = elgg_view_tree('', '');
-foreach ($views as $view) {
+	global $CONFIG;
+	static $treecache = array();
+        $view_root = ""; $viewtype = "default";
+
+	// A little light internal caching
+	if (!empty($treecache[$view_root])) {
+		return $treecache[$view_root];
+	}
+
+	// Examine $CONFIG->views->locations
+	if (isset($CONFIG->views->locations[$viewtype])) {
+		foreach ($CONFIG->views->locations[$viewtype] as $view => $path) {
+			$pos = strpos($view, $view_root);
+			if ($pos == 0) {
+				$treecache[$view_root][] = $view;
+			}
+		}
+	}
+
+	// Now examine core
+	$location = $CONFIG->viewpath;
+	$root = $location . $viewtype . '/' . $view_root;
+
+	if (file_exists($root) && is_dir($root)) {
+		$val = elgg_get_views($root, $view_root);
+		if (!is_array($treecache[$view_root])) {
+			$treecache[$view_root] = array();
+		}
+		$treecache[$view_root] = array_merge($treecache[$view_root], $val);
+	}
+     
+foreach ($treecache[$view_root] as $view) {
 	$views_config[] = trim($view, '/');
 }
 
